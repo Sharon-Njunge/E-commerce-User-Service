@@ -1,22 +1,56 @@
-name: CI
+name: CI/CD
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
+    # run on any feature branch starting with feature/
+    # e.g., feature/login
+    paths-ignore: 
+      - README.md
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-    - name: Install dependencies
-      run: pip install -r requirements.txt
-    - name: Run tests
-      run: pytest --maxfail=1 --disable-warnings -q
+      # Step 1: Checkout code
+      - uses: actions/checkout@v3
+
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      # Step 3: Cache pip for faster installs
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Step 4: Install dependencies
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      # Step 5: Lint code
+      - name: Lint code
+        run: |
+          pip install flake8
+          flake8 src/
+
+      # Step 6: Run tests
+      - name: Run tests
+        run: pytest --maxfail=1 --disable-warnings -q
+
+      # Step 7: Optional: Build Docker image to ensure it works
+      - name: Build Docker image
+        run: docker build -t fastapi_test .
+
+      # Step 8: Optional: Run FastAPI container to verify it starts
+      - name: Run FastAPI container
+        run: docker run --rm -d -p 8000:8000 fastapi_test
