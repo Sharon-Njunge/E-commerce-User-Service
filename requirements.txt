@@ -1,0 +1,9 @@
+Django>=4.2
+djangorestframework
+drf-yasg
+psycopg2-binary
+python-dotenv
+PyJWT
+djangorestframework-simplejwt
+gunicorn
+whitenoise==6.5.0

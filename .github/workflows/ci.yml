@@ -1,0 +1,44 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Lint code
+        run: |
+          pip install flake8
+          flake8 .
+
+      - name: Run tests
+        run: python manage.py test
+
+      - name: Build Docker image
+        run: docker build -t django_auth0_test .
+
+      - name: Run Django container
+        run: docker run --rm -d -p 8000:8000 django_auth0_test
