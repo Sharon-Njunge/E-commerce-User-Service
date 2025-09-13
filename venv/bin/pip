@@ -1,4 +1,4 @@
-#!/home/njunge-sharon/E-commerce-User-Service/venv/bin/python3
+#!/home/warga/E-commerce-User-Service/venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
