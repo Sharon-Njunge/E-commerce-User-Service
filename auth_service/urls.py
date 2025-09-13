@@ -46,14 +46,13 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
     path("health/", monitoring_views.health_check, name="health-check"),
     path("ready/", monitoring_views.ready_check, name="ready-check"),
     path("metrics/", monitoring_views.metrics_endpoint, name="metrics"),
-
     path("api/", include("auth_service.api.urls")),
-
-    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"),
+    path(
+        "swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"
+    ),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
     path("api-schema/", schema_view.without_ui(cache_timeout=0), name="schema-json"),
 ]
