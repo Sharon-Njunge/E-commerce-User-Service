@@ -10,6 +10,33 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      DEBUG: True
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
+      API_IDENTIFIER: ${{ secrets.API_IDENTIFIER }}
+      ALGORITHMS: RS256
+
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v3
 
