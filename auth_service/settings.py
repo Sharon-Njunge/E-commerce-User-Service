@@ -74,7 +74,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
-
+SECURE_SSL_REDIRECT = False
 AUTH_PASSWORD_VALIDATORS = []
 
 LANGUAGE_CODE = "en-us"
