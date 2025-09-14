@@ -269,7 +269,7 @@ class DatabaseIntegrationTestCase(TransactionTestCase):
         with self.assertRaises(Exception):
             CustomUser.objects.create_user(
                 username="user2",
-                email="same@example.com",
+                email="same@example.com",  # Same email should fail
                 password="test123",
                 auth0_sub="auth0|user2",
             )
@@ -356,7 +356,7 @@ class CustomUserModelTestCase(TestCase):
         with self.assertRaises(IntegrityError):
             CustomUser.objects.create_user(
                 username="another_user",
-                email=self.user_data["email"],
+                email=self.user_data["email"],  # Same email
                 password="password",
                 auth0_sub="auth0|another",
             )
@@ -473,7 +473,9 @@ class UserRoleModelTestCase(TestCase):
         UserRole.objects.create(user=self.user, role_name="customer")
 
         with self.assertRaises(IntegrityError):
-            UserRole.objects.create(user=self.user, role_name="customer")
+            UserRole.objects.create(
+                user=self.user, role_name="customer"  # Same role for same user
+            )
 
 
 class MonitoringEndpointsTestCase(TestCase):
