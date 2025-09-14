@@ -10,6 +10,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_auth_service
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v3
 
@@ -27,18 +41,47 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
-        run: pip install --no-cache-dir -r requirements.txt
+        run: |
+          pip install --no-cache-dir -r requirements.txt
+          pip install flake8
 
       - name: Lint code
         run: |
-          pip install flake8
-          flake8 .
+          flake8 --config=.flake8 .
 
       - name: Run tests
-        run: python manage.py test
+        env:
+          SECRET_KEY: test-secret-key-for-ci-do-not-use-in-production
+          DEBUG: True
+          POSTGRES_DB: test_auth_service
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          AUTH0_DOMAIN: test-domain.auth0.com
+          API_IDENTIFIER: test-api-identifier
+          ALGORITHMS: RS256
+        run: |
+          python manage.py test
 
       - name: Build Docker image
+        if: success()
         run: docker build -t django_auth0_test .
 
-      - name: Run Django container
-        run: docker run --rm -d -p 8000:8000 django_auth0_test
+      - name: Test Docker container
+        if: success()
+        run: |
+          # Start container in background
+          docker run --rm -d -p 8000:8000 --name test_container \
+            -e SECRET_KEY=test-secret \
+            -e DEBUG=False \
+            -e POSTGRES_DB=test_db \
+            -e POSTGRES_USER=test_user \
+            -e POSTGRES_PASSWORD=test_pass \
+            -e POSTGRES_HOST=localhost \
+            django_auth0_test
+          
+          # Wait for container to start
+          sleep 10
+        
+          docker stop test_container
