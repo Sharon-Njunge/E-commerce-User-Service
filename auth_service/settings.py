@@ -68,21 +68,6 @@ DATABASES = {
     }
 }
 
-# Cache configuration (Redis)
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.getenv("REDIS_URL", "redis://redis:6379/1"),
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            "CONNECTION_POOL_KWARGS": {
-                "max_connections": 20,
-                "health_check_interval": 30,
-            },
-        },
-    }
-}
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "auth_service.users.auth.Auth0JSONWebTokenAuthentication",
