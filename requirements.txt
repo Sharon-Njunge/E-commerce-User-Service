@@ -8,3 +8,5 @@ djangorestframework-simplejwt
 gunicorn
 whitenoise==6.5.0
 psutil
+django-redis
+
