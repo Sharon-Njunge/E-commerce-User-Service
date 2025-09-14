@@ -9,4 +9,4 @@ gunicorn
 whitenoise==6.5.0
 psutil
 pytest
-
+flake8
