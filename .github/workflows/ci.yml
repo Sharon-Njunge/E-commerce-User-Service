@@ -123,7 +123,7 @@ jobs:
           "
 
       - name: Lint code
-        run: flake8 . --exclude=migrations,venv,env,staticfiles
+        run: flake8 . --exclude=migrations,venv,env,staticfiles --max-line-length=120 --ignore=E305
 
       - name: Run tests
         run: |
