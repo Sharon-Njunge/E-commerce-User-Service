@@ -51,7 +51,8 @@ class Auth0JSONWebTokenAuthentication(authentication.BaseAuthentication):
             raise exceptions.AuthenticationFailed("Unable to find appropriate key")
 
         try:
-            payload = jwt.decode(
+            # Validate token – we don’t need to store payload unless we map it to a user
+            jwt.decode(
                 token,
                 rsa_key,
                 algorithms=[settings.ALGORITHMS],

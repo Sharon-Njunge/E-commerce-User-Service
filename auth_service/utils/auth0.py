@@ -2,7 +2,7 @@ import os
 import requests
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from rest_framework.authentication import BaseAuthentication
 from rest_framework import exceptions
 
@@ -45,6 +45,7 @@ class Auth0JWTAuthentication(BaseAuthentication):
                     "Invalid header. No matching JWK."
                 )
 
+            # Decode JWT and keep payload
             payload = jwt.decode(
                 token,
                 rsa_key,
@@ -64,5 +65,10 @@ class Auth0JWTAuthentication(BaseAuthentication):
                 f"Unable to parse authentication token: {str(e)}"
             )
 
-        # return (user, auth) → user can be mapped from payload["sub"]
-        return (AnonymousUser(), token)
+        # Example: map to Django user (lazy)
+        user_id = payload.get("sub")
+        if not user_id:
+            return (AnonymousUser(), token)
+
+        user, _ = User.objects.get_or_create(username=user_id)
+        return (user, token)
