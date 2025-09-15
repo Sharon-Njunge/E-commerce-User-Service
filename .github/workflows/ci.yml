@@ -18,15 +18,16 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY || 'insecure-ci-key' }}
-      DJANGO_DEBUG: "0"
+      DJANGO_SETTINGS_MODULE: auth_service.settings
+      SECRET_KEY: ${{ secrets.SECRET_KEY || 'insecure-ci-key' }}
+      DEBUG: "False"
       ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
 
-      DB_NAME: app_ci
-      DB_USER: app
-      DB_PASSWORD: app
-      DB_HOST: 127.0.0.1
-      DB_PORT: "5432"
+      POSTGRES_DB: user_db
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
 
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: "6379"
@@ -39,12 +40,12 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: app
-          POSTGRES_PASSWORD: app
-          POSTGRES_DB: postgres
+          POSTGRES_USER: auth_user
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: user_db  
         ports: ["5432:5432"]
         options: >-
-          --health-cmd="pg_isready -U app -d postgres"
+          --health-cmd="pg_isready -U auth_user -d user_db"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -72,8 +73,7 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
@@ -81,38 +81,23 @@ jobs:
           pip install -r requirements.txt
           pip install pytest flake8
 
-      - name: Wait for Postgres/Redis
+      - name: Wait for Postgres & Redis
         run: |
           for i in {1..30}; do nc -z 127.0.0.1 5432 && break; sleep 2; done
           for i in {1..30}; do nc -z 127.0.0.1 6379 && break; sleep 2; done
 
-      - name: Create CI database
-        env:
-          PGPASSWORD: app
-        run: |
-          psql -h 127.0.0.1 -U app -d postgres -c "CREATE DATABASE \"${DB_NAME}\";" || true
-
-      - name: Django system checks
-        env:
-          DJANGO_SETTINGS_MODULE: auth_service.settings
-        run: |
-          python manage.py check
+      - name: Django checks
+        run: python manage.py check
 
       - name: Migrate
-        env:
-          DJANGO_SETTINGS_MODULE: auth_service.settings
-        run: |
-          python manage.py migrate --noinput
+        run: python manage.py migrate --noinput
 
       - name: Lint
         run: flake8 . --exclude=migrations,venv,env --max-line-length=120
 
       - name: Tests
-        env:
-          DJANGO_SETTINGS_MODULE: auth_service.settings
         run: pytest -q
 
       - name: Build Docker image (pushes only)
         if: github.event_name == 'push'
-        run: |
-          docker build -t django_app:${{ github.sha }} .
+        run: docker build -t ecom_user_service:${{ github.sha }} .
