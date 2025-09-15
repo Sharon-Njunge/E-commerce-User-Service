@@ -1,12 +1,13 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from django.conf import settings
+import time
 import requests
+from django.conf import settings
+from django.core.cache import cache
 from pydantic import BaseModel, EmailStr, constr
 from pydantic.error_wrappers import ValidationError
-from django.core.cache import cache
-import time
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 
 # ----------------------------
 # Pydantic schema
@@ -15,11 +16,13 @@ class LoginSchema(BaseModel):
     email: EmailStr
     password: constr(min_length=8, max_length=50)
 
+
 # ----------------------------
 # Configurable rate-limiting
 # ----------------------------
-MAX_ATTEMPTS = 5           # Maximum failed login attempts
-BLOCK_TIME = 300           # Block time in seconds (5 min)
+MAX_ATTEMPTS = 5  # Maximum failed login attempts
+BLOCK_TIME = 300  # Block time in seconds (5 minutes)
+
 
 # ----------------------------
 # Auth0 login view
@@ -37,7 +40,10 @@ class Auth0LoginView(APIView):
         try:
             data = LoginSchema(**request.data)
         except ValidationError as e:
-            return Response({"error": e.errors()}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": e.errors()},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         email = data.email
         cache_key = f"login_attempts:{email}"
@@ -47,8 +53,14 @@ class Auth0LoginView(APIView):
         now = int(time.time())
 
         if attempts["blocked_until"] > now:
+            wait_time = attempts["blocked_until"] - now
             return Response(
-                {"error": f"Too many failed login attempts. Try again in {attempts['blocked_until'] - now} seconds."},
+                {
+                    "error": (
+                        f"Too many failed login attempts. "
+                        f"Try again in {wait_time} seconds."
+                    )
+                },
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
@@ -79,7 +91,7 @@ class Auth0LoginView(APIView):
             cache.set(cache_key, attempts, timeout=BLOCK_TIME)
             return Response(
                 {"error": response.json()},
-                status=response.status_code
+                status=response.status_code,
             )
 
         # 5️⃣ Successful login, reset attempts

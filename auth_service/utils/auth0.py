@@ -1,13 +1,15 @@
-# auth_service/utils/auth0.py
 import os
-import jwt
 import requests
+from jose import jwt
+from jose.exceptions import ExpiredSignatureError, JWTClaimsError, JWTError
+from django.contrib.auth.models import AnonymousUser
 from rest_framework.authentication import BaseAuthentication
 from rest_framework import exceptions
 
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
 AUTH0_AUDIENCE = os.getenv("AUTH0_AUDIENCE")
 AUTH0_JWKS_URL = f"https://{AUTH0_DOMAIN}/.well-known/jwks.json"
+
 
 class Auth0JWTAuthentication(BaseAuthentication):
     """
@@ -22,7 +24,9 @@ class Auth0JWTAuthentication(BaseAuthentication):
 
         parts = auth_header.split()
         if parts[0].lower() != "bearer" or len(parts) != 2:
-            raise exceptions.AuthenticationFailed("Invalid Authorization header format.")
+            raise exceptions.AuthenticationFailed(
+                "Invalid Authorization header format."
+            )
 
         token = parts[1]
 
@@ -31,19 +35,15 @@ class Auth0JWTAuthentication(BaseAuthentication):
             jwks = requests.get(AUTH0_JWKS_URL).json()
             unverified_header = jwt.get_unverified_header(token)
 
-            rsa_key = {}
-            for key in jwks["keys"]:
-                if key["kid"] == unverified_header["kid"]:
-                    rsa_key = {
-                        "kty": key["kty"],
-                        "kid": key["kid"],
-                        "use": key["use"],
-                        "n": key["n"],
-                        "e": key["e"],
-                    }
+            rsa_key = next(
+                (key for key in jwks["keys"] if key["kid"] == unverified_header["kid"]),
+                None,
+            )
 
             if not rsa_key:
-                raise exceptions.AuthenticationFailed("Invalid header. No matching JWK.")
+                raise exceptions.AuthenticationFailed(
+                    "Invalid header. No matching JWK."
+                )
 
             payload = jwt.decode(
                 token,
@@ -53,11 +53,16 @@ class Auth0JWTAuthentication(BaseAuthentication):
                 issuer=f"https://{AUTH0_DOMAIN}/",
             )
 
-        except jwt.ExpiredSignatureError:
+        except ExpiredSignatureError:
             raise exceptions.AuthenticationFailed("Token expired.")
-        except jwt.JWTClaimsError:
-            raise exceptions.AuthenticationFailed("Incorrect claims. Check audience and issuer.")
-        except Exception as e:
-            raise exceptions.AuthenticationFailed(f"Unable to parse authentication token: {str(e)}")
+        except JWTClaimsError:
+            raise exceptions.AuthenticationFailed(
+                "Incorrect claims. Check audience and issuer."
+            )
+        except JWTError as e:
+            raise exceptions.AuthenticationFailed(
+                f"Unable to parse authentication token: {str(e)}"
+            )
 
-        return (payload, None)
+        # return (user, auth) → user can be mapped from payload["sub"]
+        return (AnonymousUser(), token)
