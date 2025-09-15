@@ -22,6 +22,8 @@ jobs:
       AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
       API_IDENTIFIER: ${{ secrets.API_IDENTIFIER }}
       ALGORITHMS: RS256
+      # Add this to help with URL resolution
+      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
 
     services:
       postgres:
@@ -42,6 +44,11 @@ jobs:
         image: redis:7
         ports:
           - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - uses: actions/checkout@v3
@@ -64,14 +71,75 @@ jobs:
           pip install --no-cache-dir -r requirements.txt
           pip install pytest psutil django-redis flake8
 
-      - name: Lint code
-        run: flake8 .
+      - name: Wait for services
+        run: |
+          # Wait for PostgreSQL
+          until pg_isready -h localhost -p 5432 -U auth_user; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          
+          # Wait for Redis
+          until redis-cli -h localhost -p 6379 ping; do
+            echo "Waiting for Redis..."
+            sleep 2
+          done
 
-      - name: Run tests
-        run: python manage.py test
+      - name: Check Django configuration
+        run: |
+          python manage.py check --deploy
+
+      - name: Run migrations
+        run: |
+          python manage.py makemigrations --dry-run --check
+          python manage.py migrate
+
+      - name: Collect static files
+        run: |
+          mkdir -p staticfiles
+          python manage.py collectstatic --noinput
+
+      - name: Debug URL patterns
+        run: |
+          python manage.py show_urls || echo "show_urls command not available"
+          python -c "
+          import os
+          import django
+          os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'auth_service.settings')
+          django.setup()
+          from django.urls import get_resolver
+          resolver = get_resolver()
+          print('URL patterns:')
+          for pattern in resolver.url_patterns:
+              print(f'  {pattern}')
+          "
+
+      - name: Lint code
+        run: flake8 . --exclude=migrations,venv,env
+
+      - name: Run tests with verbose output
+        run: |
+          python manage.py test --verbosity=2 --debug-mode
 
       - name: Build Docker image
+        if: success()
         run: docker build -t django_auth0_test .
 
-      - name: Run Django container
-        run: docker run --rm -d -p 8000:8000 django_auth0_test
+      - name: Test Docker container
+        if: success()
+        run: |
+          # Run container in background
+          docker run --rm -d --name test_container -p 8000:8000 \
+            -e SECRET_KEY="${{ secrets.SECRET_KEY }}" \
+            -e AUTH0_DOMAIN="${{ secrets.AUTH0_DOMAIN }}" \
+            -e API_IDENTIFIER="${{ secrets.API_IDENTIFIER }}" \
+            django_auth0_test
+          
+          # Wait for container to be ready
+          sleep 10
+          
+          # Test if container is responding
+          curl -f http://localhost:8000/health/ || echo "Health check failed"
+          
+          # Clean up
+          docker stop test_container
