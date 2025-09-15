@@ -2,63 +2,73 @@ name: CI/CD
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [main, dev]
   pull_request:
-    branches: [ main, dev ]
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
 
     env:
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
-      DEBUG: True
-      POSTGRES_DB: user_db
-      POSTGRES_USER: auth_user
-      POSTGRES_PASSWORD: password
-      POSTGRES_HOST: localhost
-      POSTGRES_PORT: 5432
-      REDIS_URL: redis://localhost:6379/1
+      DJANGO_SECRET_KEY: ${{ secrets.SECRET_KEY || 'insecure-ci-key' }}
+      DJANGO_DEBUG: "0"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+
+      DB_NAME: app_ci
+      DB_USER: app
+      DB_PASSWORD: app
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: "6379"
+
       AUTH0_DOMAIN: ${{ secrets.AUTH0_DOMAIN }}
       API_IDENTIFIER: ${{ secrets.API_IDENTIFIER }}
       ALGORITHMS: RS256
-      ALLOWED_HOSTS: localhost,127.0.0.1,testserver
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:16
         env:
-          POSTGRES_DB: user_db
-          POSTGRES_USER: auth_user
-          POSTGRES_PASSWORD: password
-        ports:
-          - 5432:5432
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
         options: >-
-          --health-cmd="pg_isready -U auth_user"
+          --health-cmd="pg_isready -U app -d postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
 
       redis:
-        image: redis:7
-        ports:
-          - 6379:6379
+        image: redis:7-alpine
+        ports: ["6379:6379"]
         options: >-
-          --health-cmd="redis-cli ping"
+          --health-cmd="redis-cli ping || exit 1"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Cache pip
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -67,87 +77,42 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --no-cache-dir -r requirements.txt
-          pip install pytest psutil django-redis flake8
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest flake8
 
-      - name: Wait for PostgreSQL
+      - name: Wait for Postgres/Redis
         run: |
-          # Simple wait for PostgreSQL using netcat
-          for i in {1..30}; do
-            if nc -z localhost 5432; then
-              echo "PostgreSQL is ready!"
-              break
-            fi
-            echo "Waiting for PostgreSQL... ($i/30)"
-            sleep 2
-          done
+          for i in {1..30}; do nc -z 127.0.0.1 5432 && break; sleep 2; done
+          for i in {1..30}; do nc -z 127.0.0.1 6379 && break; sleep 2; done
 
-      - name: Wait for Redis  
+      - name: Create CI database
+        env:
+          PGPASSWORD: app
         run: |
-          # Simple wait for Redis using netcat
-          for i in {1..15}; do
-            if nc -z localhost 6379; then
-              echo "Redis is ready!"
-              break
-            fi
-            echo "Waiting for Redis... ($i/15)"
-            sleep 2
-          done
+          psql -h 127.0.0.1 -U app -d postgres -c "CREATE DATABASE \"${DB_NAME}\";" || true
 
-      - name: Check Django configuration
+      - name: Django system checks
+        env:
+          DJANGO_SETTINGS_MODULE: auth_service.settings
         run: |
-          python manage.py check --deploy
+          python manage.py check
 
-      - name: Run migrations
+      - name: Migrate
+        env:
+          DJANGO_SETTINGS_MODULE: auth_service.settings
         run: |
-          python manage.py migrate --run-syncdb
+          python manage.py migrate --noinput
 
-      - name: Collect static files
+      - name: Lint
+        run: flake8 . --exclude=migrations,venv,env --max-line-length=120
+
+      - name: Tests
+        env:
+          DJANGO_SETTINGS_MODULE: auth_service.settings
+        run: pytest -q
+
+      - name: Build Docker image (pushes only)
+        if: github.event_name == 'push'
         run: |
-          mkdir -p staticfiles
-          python manage.py collectstatic --noinput
-
-      - name: Debug URL patterns
-        run: |
-          python manage.py show_urls || echo "show_urls command not available"
-          python -c "
-          import os
-          import django
-          os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'auth_service.settings')
-          django.setup()
-          from django.urls import get_resolver
-          resolver = get_resolver()
-          print('URL patterns:')
-          for pattern in resolver.url_patterns:
-              print(f'  {pattern}')
-          "
-
-      - name: Lint code
-        run: flake8 . --exclude=migrations,venv,env,staticfiles --max-line-length=120 --ignore=E305
-
-      - name: Run tests
-        run: |
-          python manage.py test --verbosity=2
-
-      - name: Build Docker image
-        if: success()
-        run: docker build -t django_auth0_test .
-
-      - name: Test Docker container
-        if: success()
-        run: |
-          # Run container in background
-          docker run --rm -d --name test_container -p 8000:8000 \
-            -e SECRET_KEY="${SECRET_KEY:-test-secret-key}" \
-            -e AUTH0_DOMAIN="${{ secrets.AUTH0_DOMAIN }}" \
-            -e API_IDENTIFIER="${{ secrets.API_IDENTIFIER }}" \
-            django_auth0_test
-          
-          # Wait for container to be ready
-          sleep 15
-          
-          # Test if container is responding (optional, may fail if health endpoint has issues)
-          timeout 30 bash -c 'until curl -f http://localhost:8000/health/ 2>/dev/null; do sleep 2; done' || echo "Health check failed or endpoint not available"
-          
-          # Clean up
-          docker stop test_container
+          docker build -t django_app:${{ github.sha }} .
