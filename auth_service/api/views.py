@@ -3,7 +3,6 @@ import requests
 from pydantic import BaseModel, EmailStr, constr
 from pydantic.error_wrappers import ValidationError
 from rest_framework import status
-from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
@@ -15,7 +14,9 @@ class OrdersView(APIView):
     permission_classes = [HasPermission("read:orders")]
 
     def get(self, request):
-        return Response({"message": f"Orders visible to {request.user['sub']}"})
+        return Response(
+            {"message": f"Orders visible to {request.user['sub']}"}
+        )
 
 
 class AdminUsersView(APIView):
@@ -52,7 +53,10 @@ class Auth0LoginView(APIView):
         try:
             data = LoginSchema(**request.data)
         except ValidationError as e:
-            return Response({"error": e.errors()}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": e.errors()},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         payload = {
             "grant_type": "password",
