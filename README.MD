@@ -1,20 +1,34 @@
 # Fintech Platform - Core API Service
 
-This is the  core implementation of our secure fintech platform. It provides user identity and profile management using Auth0 for authentication.
+This is the  core implementation of our secure fintech platform. It provides user identity and profile management using Auth0 for authentication and PostgreSQL as the primary database. 
 
-## Prerequisites
 
-- Docker
-- Docker Compose
-- An Auth0 Account and Tenant
+## 🚀 Features
 
-## Local Development Setup
+- Secure **user authentication** with Auth0
+- Comprehensive **user management** (profiles, roles, sessions, preferences)
+- **Audit logging** of user activities
+- **Dockerized setup** for local development
+- Automated **database migrations** with Alembic
+- Test suite with **pytest** and coverage reports
 
-1.  **Clone the repository:**
-    ```bash
-    git clone <https://github.com/Sharon-Njunge/E-commerce-User-Service.git>
-    cd E-commerce-User-Service
-    ```
+---
+
+## 📦 Prerequisites
+
+- [Docker](https://www.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/)
+- [Auth0 Account](https://auth0.com/) and Tenant
+
+---
+
+## ⚙️ Local Development Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Sharon-Njunge/E-commerce-User-Service.git
+   cd E-commerce-User-Service
+
 
 2.  **Configure Environment Variables:**
     Copy the example environment file and update the values with your specific details.
@@ -61,3 +75,20 @@ This is the  core implementation of our secure fintech platform. It provides use
 To execute the test suite with coverage, run:
 ```bash
 docker-compose exec api pytest --cov=src --cov-report=term-missing
+
+## Database Schema
+
+### Entity-Relationship Diagram
+![ER Diagram](schema.png)
+
+### Entities
+- **users**
+  - Stores user details (UUID PK, email, name, etc.)
+- **user_preferences**
+  - One-to-one with users (preferences like theme, currency, notifications)
+- **user_sessions**
+  - Tracks login sessions, tokens, expiry
+- **user_roles**
+  - Stores roles per user, with assigned_by reference to another user
+- **user_activities**
+  - Audit log of user actions (login, logout, profile updates, etc.)
