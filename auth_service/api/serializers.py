@@ -1,5 +1,6 @@
-from rest_framework import serializers
 from django.contrib.auth.models import User
+from rest_framework import serializers
+
 
 class UserProfileSerializer(serializers.ModelSerializer):
     firstName = serializers.CharField(source="first_name", read_only=True)
