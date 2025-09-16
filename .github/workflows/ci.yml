@@ -47,21 +47,21 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('E-commerce-User-Authentication-Service/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r E-commerce-User-Authentication-Service/requirements.txt
 
       - name: Run migrations
         run: |
-          cd src
+          cd E-commerce-User-Authentication-Service/src
           python manage.py migrate --noinput
 
       - name: Run tests
         run: |
-          cd src
+          cd E-commerce-User-Authentication-Service/src
           python manage.py test --verbosity=2
