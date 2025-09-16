@@ -5,7 +5,6 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
 
-
 schema_view = get_schema_view(
     openapi.Info(
         title="E-commerce User Service API",
@@ -18,7 +17,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"),
-    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
-    path("api/", include("auth_service.urls")),
+    # path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"),
+    # path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
+    path("api/", include("auth_service.api.urls")),
 ]

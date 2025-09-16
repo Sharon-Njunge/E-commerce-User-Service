@@ -1,49 +1,42 @@
-# services:
-#   web:
-#     build: .
-#     container_name: e-commerce-user-service-web
-#     command: gunicorn auth_service.wsgi:application --bind 0.0.0.0:8000 --workers 2
-#     ports:
-#       - "8000:8000"
-#     depends_on:
-#       - db
-#     environment:
-#       - PYTHONPATH=/app
-
-#   db:
-#     image: postgres:15
-#     container_name: e-commerce-user-service-db
-#     restart: always
-#     environment:
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: password
-#       POSTGRES_DB: auth_service
-#     ports:
-#       - "5433:5432"
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-
-# volumes:
-#   postgres_data:
-
-
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+    - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
   web:
     build: .
     command: gunicorn auth_service.wsgi:application --bind 0.0.0.0:8000 --workers 2
     volumes:
       - .:/app
-      - static_volume:/app/staticfiles   # 👈 static volume mount
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
+      - static_volume:/app/staticfiles   
     environment:
       - PYTHONPATH=/app
+      - REDIS_URL=redis://redis:6379/1
+      - DATABASE_URL=postgresql://user:password@db:5432/auth_service
+
+    depends_on:
+      - db
+      - redis
+    deploy:
+      replicas: 3  
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - static_volume:/static
+
 
   db:
     image: postgres:15
-    container_name: e-commerce-user-service-db
     restart: always
     environment:
       POSTGRES_USER: user
@@ -57,3 +50,6 @@ services:
 volumes:
   postgres_data:
   static_volume:
+  redis_data:
+
+
