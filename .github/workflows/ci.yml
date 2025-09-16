@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install flake8 coverage
+          pip install black
 
       - name: Lint and test
         env:
@@ -54,7 +54,7 @@ jobs:
           AUTH0_CLIENT_ID: test_id
           AUTH0_CLIENT_SECRET: test_secret
         run: |
-          flake8 .
+          black --check .
           python manage.py migrate
           coverage run --source='.' manage.py test
           coverage report

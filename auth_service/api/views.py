@@ -10,7 +10,6 @@ from .serializers import ProfileUpdateSerializer, UserProfileSerializer
 # Create your views here.
 
 
-
 @api_view(["GET"])
 def get_users(request):
     """Get list of users"""
