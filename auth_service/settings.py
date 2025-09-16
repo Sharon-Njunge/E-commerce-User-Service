@@ -1,7 +1,6 @@
-
-
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -34,7 +33,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
-
 ]
 
 ROOT_URLCONF = "auth_service.urls"
@@ -83,19 +81,28 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "auth_service.users.auth.Auth0JSONWebTokenAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://localhost:6379/1"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    }
+}
+
+# Redis session configuration
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
 
 # Auth0 settings
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
 API_IDENTIFIER = os.getenv("API_IDENTIFIER")
 ALGORITHMS = os.getenv("ALGORITHMS", "RS256")
 
-
-from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 

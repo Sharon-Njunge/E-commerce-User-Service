@@ -2,8 +2,11 @@ Django>=4.2
 djangorestframework
 drf-yasg
 psycopg2-binary
-python-dotenv
+python-dotenv==1.0.0
 PyJWT
 djangorestframework-simplejwt
 gunicorn
 whitenoise==6.5.0
+redis==4.5.4
+django-redis==5.2.0
+black==25.1.0

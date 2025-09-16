@@ -1,7 +1,6 @@
-from django.db import models
-
 # Create your models here.
 from django.db import models
+
 
 # Optional: define a custom User model if needed
 class User(models.Model):

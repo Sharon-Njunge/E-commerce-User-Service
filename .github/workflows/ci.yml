@@ -6,39 +6,101 @@ on:
   pull_request:
     branches: [ main, dev ]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_auth_service
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      - name: Cache pip
-        uses: actions/cache@v3
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
       - name: Install dependencies
-        run: pip install --no-cache-dir -r requirements.txt
-
-      - name: Lint code
         run: |
-          pip install flake8
-          flake8 .
+          pip install -r requirements.txt
+          pip install black
 
-      - name: Run tests
-        run: python manage.py test
+      - name: Lint and test
+        env:
+          SECRET_KEY: test-key
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_auth_service
+          REDIS_URL: redis://localhost:6379/1
+          AUTH0_DOMAIN: test.auth0.com
+          AUTH0_CLIENT_ID: test_id
+          AUTH0_CLIENT_SECRET: test_secret
+        run: |
+          black --check .
+          python manage.py migrate
+          coverage run --source='.' manage.py test
+          coverage report
 
-      - name: Build Docker image
-        run: docker build -t django_auth0_test .
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: test
 
-      - name: Run Django container
-        run: docker run --rm -d -p 8000:8000 django_auth0_test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run integration tests
+        run: |
+          docker-compose up -d --scale web=3
+          sleep 30
+          docker-compose exec -T web python manage.py test --tag=integration
+          docker-compose down
+
+  build:
+    needs: [test, integration-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
