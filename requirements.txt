@@ -13,3 +13,4 @@ pytest-cov
 requests-mock
 tenacity
 requests>=2.31.0
+pybreaker

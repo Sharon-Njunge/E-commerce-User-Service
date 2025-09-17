@@ -1,5 +1,4 @@
 
-
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import permissions
@@ -14,6 +13,7 @@ schema_view = get_schema_view(
     ),
     public=True,  # 👈 this allows public access
     permission_classes=(permissions.AllowAny,),
+    authentication_classes=[],
 )
 
 urlpatterns = [
