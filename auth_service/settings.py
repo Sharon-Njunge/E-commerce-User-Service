@@ -1,5 +1,4 @@
 
-
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -62,7 +61,7 @@ DATABASES = {
         "NAME": os.getenv("POSTGRES_DB"),
         "USER": os.getenv("POSTGRES_USER"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": "db",
+        "HOST": "localhost",
         "PORT": os.getenv("POSTGRES_PORT", 5432),
     }
 }
@@ -80,12 +79,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # REST Framework + JWT Auth0
 # --------------------------
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
+    "DEFAULT_AUTHENTICATION_CLASSES": [
         "auth_service.users.auth.Auth0JSONWebTokenAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": (
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
-    ),
+    ],
+    "EXCEPTION_HANDLER": "auth_service.api.exceptions.custom_exception_handler",
 }
 
 
@@ -94,8 +94,6 @@ AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
 API_IDENTIFIER = os.getenv("API_IDENTIFIER")
 ALGORITHMS = os.getenv("ALGORITHMS", "RS256")
 
-
-from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
