@@ -1,32 +1,3 @@
-# services:
-#   web:
-#     build: .
-#     container_name: e-commerce-user-service-web
-#     command: gunicorn auth_service.wsgi:application --bind 0.0.0.0:8000 --workers 2
-#     ports:
-#       - "8000:8000"
-#     depends_on:
-#       - db
-#     environment:
-#       - PYTHONPATH=/app
-
-#   db:
-#     image: postgres:15
-#     container_name: e-commerce-user-service-db
-#     restart: always
-#     environment:
-#       POSTGRES_USER: user
-#       POSTGRES_PASSWORD: password
-#       POSTGRES_DB: auth_service
-#     ports:
-#       - "5433:5432"
-#     volumes:
-#       - postgres_data:/var/lib/postgresql/data
-
-# volumes:
-#   postgres_data:
-
-
 services:
   web:
     build: .
