@@ -1,14 +1,20 @@
+
 import json
 import jwt
 from urllib.request import urlopen
 from django.conf import settings
 from rest_framework import authentication, exceptions
 
+
 class Auth0JSONWebTokenAuthentication(authentication.BaseAuthentication):
     def authenticate(self, request):
-        auth = request.headers.get("Authorization", None)
+        auth = request.headers.get("Authorization")
+
         if not auth:
-            return None
+            # 🔥 Change this
+            # Old: return None
+            # New: force a 401 instead of letting DRF fall back to PermissionDenied (403)
+            raise exceptions.AuthenticationFailed("Authentication credentials were not provided.")
 
         parts = auth.split()
 
@@ -47,12 +53,13 @@ class Auth0JSONWebTokenAuthentication(authentication.BaseAuthentication):
                     issuer=f"https://{settings.AUTH0_DOMAIN}/"
                 )
             except jwt.ExpiredSignatureError:
-                raise exceptions.AuthenticationFailed("token is expired")
+                raise exceptions.AuthenticationFailed("Token is expired")
             except jwt.JWTClaimsError:
-                raise exceptions.AuthenticationFailed("incorrect claims")
+                raise exceptions.AuthenticationFailed("Incorrect claims")
             except Exception:
                 raise exceptions.AuthenticationFailed("Unable to parse authentication token")
 
+            # Return a dummy user-like object instead of raw payload
             return (payload, token)
 
         raise exceptions.AuthenticationFailed("Unable to find appropriate key")

@@ -10,8 +10,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: auth_service
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U user"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -34,7 +50,22 @@ jobs:
           pip install flake8
           flake8 .
 
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Allow user to create DB
+        env:
+          PGPASSWORD: password
+        run: |
+          psql -h localhost -U user -d auth_service -c "ALTER USER \"user\" CREATEDB;"
+
       - name: Run tests
+        env:
+          POSTGRES_DB: auth_service
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
         run: python manage.py test
 
       - name: Build Docker image
