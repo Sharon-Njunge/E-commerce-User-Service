@@ -1,14 +1,15 @@
-
 # Create your tests here.
 
 from django.test import TestCase
 from rest_framework.test import APIClient
+
 # from django.urls import reverse
 
 import pytest
 import requests
 from unittest.mock import patch
 from auth_service.api.utils import call_auth0
+
 # from api.utils import call_auth0
 
 client = APIClient()
@@ -43,10 +44,14 @@ def test_retry_logic_success_after_failures():
         mock_get.side_effect = [
             requests.exceptions.RequestException("fail 1"),
             requests.exceptions.RequestException("fail 2"),
-            type("Response", (), {
-                "raise_for_status": lambda self: None,
-                "json": lambda self: {"ok": True}
-            })()
+            type(
+                "Response",
+                (),
+                {
+                    "raise_for_status": lambda self: None,
+                    "json": lambda self: {"ok": True},
+                },
+            )(),
         ]
 
         result = call_auth0("https://fake-auth0.com")
