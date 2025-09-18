@@ -19,6 +19,7 @@ def get_management_token():
     response = requests.post(url, json=payload)
     return response.json().get("access_token")
 
+
 @csrf_exempt
 @require_http_methods(["POST"])
 def register_user(request):
@@ -60,9 +61,9 @@ def register_user(request):
                 "last_name": user.get("last_name", ""),
             }
         }, status=201)
-    else:
-        return JsonResponse({"error": "Registration failed"}, status=400)
-    
+    return JsonResponse({"error": "Registration failed"}, status=400)
+
+
 @require_http_methods(["GET"])
 def list_users(request):
     """List all users"""
@@ -89,6 +90,7 @@ def list_users(request):
         })
 
     return JsonResponse({"users": users})
+
 
 @require_http_methods(["GET"])
 def get_profile(request):
@@ -123,13 +125,13 @@ def update_profile(request):
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    id = user_session.get("userinfo", {}).get("id")
+    user_id = user_session.get("userinfo", {}).get("id")
     token = get_management_token()
 
     if not token:
         return JsonResponse({"error": "Auth failed"}, status=500)
 
-    url = f"https://{settings.AUTH0_DOMAIN}/api/users/{id}"
+    url = f"https://{settings.AUTH0_DOMAIN}/api/users/{user_id}"
     headers = {"Authorization": f"Bearer {token}"}
 
     update_data = {}
@@ -144,5 +146,4 @@ def update_profile(request):
 
     if response.status_code == 200:
         return JsonResponse({"message": "Updated successfully"})
-    else:
-        return JsonResponse({"error": "Update failed"}, status=400)
+    return JsonResponse({"error": "Update failed"}, status=400)
