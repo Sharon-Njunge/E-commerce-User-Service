@@ -2,6 +2,7 @@ from django.utils.deprecation import MiddlewareMixin
 from rest_framework.exceptions import AuthenticationFailed
 from auth_service.utils.auth0 import Auth0JWTAuthentication
 
+
 class AuthMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if request.path.startswith("/api/v1/protected/"):
@@ -10,6 +11,6 @@ class AuthMiddleware(MiddlewareMixin):
                 raise AuthenticationFailed("Authorization header missing or invalid.")
 
             token = auth_header.split(" ")[1]
-            validator = Auth0Validator()
-            payload = validator.validate_token(token)
+            validator = Auth0JWTAuthentication()
+            payload = validator.authenticate_token(token)
             request.auth = payload

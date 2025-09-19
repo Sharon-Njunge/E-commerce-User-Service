@@ -1,9 +1,9 @@
-import json
 import requests
 from jose import jwt
 from django.conf import settings
 from rest_framework.authentication import BaseAuthentication
 from rest_framework import exceptions
+
 
 class Auth0JWTAuthentication(BaseAuthentication):
     """

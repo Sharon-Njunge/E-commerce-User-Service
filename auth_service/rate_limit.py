@@ -2,6 +2,7 @@ import time
 from django.core.cache import cache
 from rest_framework.exceptions import Throttled, AuthenticationFailed
 
+
 def rate_limit(request, key_prefix="auth", limit=5, window=60):
     """
     Limit requests to `limit` per `window` seconds per IP.

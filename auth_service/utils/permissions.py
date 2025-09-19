@@ -1,5 +1,6 @@
 from rest_framework import permissions
 
+
 class HasAuth0Permission(permissions.BasePermission):
     """
     Check if the JWT token has the required Auth0 permission.
