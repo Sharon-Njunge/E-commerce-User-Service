@@ -12,6 +12,7 @@ from django.http import JsonResponse
 from django.db import connection
 import requests
 from .constants import AUTH0_HEALTH_URL
+from auth_service.utils.permissions import HasAuth0Permission
 
 
 class UserListView(APIView):
@@ -52,3 +53,19 @@ def health_check(request):
         "status": overall,
         "checks": status
     })
+
+
+class OrdersView(APIView):
+    permission_classes = [IsAuthenticated, HasAuth0Permission]
+    HasAuth0Permission.required_permission = "create:orders"
+
+    def get(self, request):
+        return Response({"msg": "You are allowed to create orders!"})
+
+
+class UsersView(APIView):
+    permission_classes = [IsAuthenticated, HasAuth0Permission]
+    HasAuth0Permission.required_permission = "read:users"
+
+    def get(self, request):
+        return Response({"msg": "You are allowed to read users!"})
