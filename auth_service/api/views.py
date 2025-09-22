@@ -17,7 +17,7 @@ class UserListView(APIView):
                 permission.required_permission = "read:users"
         return permissions
 
-    def get(self, request):
+    def get(self, reuest):
         """List all users from Auth0"""
         try:
             auth0_url = "https://{AUTH0_DOMAIN}/api/v1/users"
