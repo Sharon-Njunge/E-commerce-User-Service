@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -35,7 +34,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "auth_service.middleware.AuthMiddleware",
-
 ]
 
 ROOT_URLCONF = "auth_service.urls"

@@ -2,7 +2,7 @@ from django.urls import path
 from auth_service import api
 from .views import UserDetailView, UserListView
 
-namespace=api
+namespace = api
 
 urlpatterns = [
     path("v1/users/", UserListView.as_view(), name="user-list"),

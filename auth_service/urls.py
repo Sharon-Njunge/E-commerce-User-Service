@@ -1,5 +1,3 @@
-
-
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import permissions
@@ -19,6 +17,8 @@ schema_view = get_schema_view(
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/", include("auth_service.api.urls")),  # adjust if your app has urls.py
-    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"),
+    path(
+        "swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="swagger-ui"
+    ),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="redoc"),
 ]
