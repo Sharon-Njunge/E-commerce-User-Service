@@ -1,10 +1,10 @@
 from django.urls import path
-from .views import UserListView
-from . import views
+from auth_service import api
+from .views import UserDetailView, UserListView
+
+namespace=api
 
 urlpatterns = [
-    path("users/", UserListView.as_view(), name="list-users"),
-    path("health/", views.health_check, name="health-check"),
-
-    # Add more API endpoints from other apps here in the future
+    path("v1/users/", UserListView.as_view(), name="user-list"),
+    path("v1/users/<str:user_id>/", UserDetailView.as_view(), name="user-detail"),
 ]

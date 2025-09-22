@@ -1,4 +1,3 @@
-
 # Create your tests here.
 import pytest
 import requests
@@ -30,6 +29,6 @@ def test_retry_logic_success_after_failures():
 
 
 def test_health_check_endpoint():
-    response = client.get("/api/v1/health/")
+    response = client.get("/api/health/")
     assert response.status_code == HTTP_200_OK
     assert response.json() == {"status": "ok"}
