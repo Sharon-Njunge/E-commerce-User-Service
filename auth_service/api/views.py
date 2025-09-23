@@ -335,8 +335,7 @@ class ReadinessCheckView(APIView):
     Readiness check with database and cache validation
     """
     permission_classes = [permissions.AllowAny]
-    authentication_classes = []  # Explicitly disable authentication
-    
+    authentication_classes = [] 
     def get(self, request):
         try:
             logger.info("Readiness check called")
