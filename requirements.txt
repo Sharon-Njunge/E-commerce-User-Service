@@ -18,3 +18,4 @@ cryptography>=3.4.0,<43.0.0
 django-redis>=5.2.0
 redis>=4.0
 Faker>=18.9.0
+authlib
