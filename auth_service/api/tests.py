@@ -1,8 +1,40 @@
+
 import json
-from django.test import TestCase, Client
+from unittest.mock import patch
+
+import pytest
+import requests
+from django.test import Client, TestCase
+from rest_framework.test import APIClient
+
+from auth_service.api.utils import call_auth0  # Fixed import path
 from auth_service.users.models import UserProfile
 
 
+class APITestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+@pytest.mark.django_db
+def test_retry_logic_success_after_failures():
+    # Mock requests.get to fail twice then succeed
+    with patch("auth_service.api.utils.requests.get") as mock_get:  # Fixed import path
+        mock_get.side_effect = [
+            requests.exceptions.RequestException("fail 1"),
+            requests.exceptions.RequestException("fail 2"),
+            type(
+                "Response",
+                (),
+                {
+                    "raise_for_status": lambda self: None,
+                    "json": lambda self: {"ok": True},
+                },
+            )(),
+        ]
+
+        result = call_auth0("https://fake-auth0.com")
+        assert result == {"ok": True}
+        assert mock_get.call_count == 3
 class AuthTests(TestCase):
     def setUp(self):
         """Create test data."""

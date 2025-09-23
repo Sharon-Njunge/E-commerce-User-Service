@@ -1,5 +1,6 @@
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework.exceptions import AuthenticationFailed
+
 from auth_service.utils.auth0 import Auth0JWTAuthentication
 
 
