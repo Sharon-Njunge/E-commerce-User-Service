@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My App</title>
+</head>
+<body>
+    {% if session %}
+        <h1>Welcome to My App</h1>
+        <div>
+            <h3>Hello, {{ session.userinfo.name|default:"User" }}!</h3>
+            <p>Email: {{ session.userinfo.email }}</p>
+            <p>User ID: {{ session.userinfo.sub }}</p>
+            
+            <a href="{% url 'logout' %}" style="background-color: #dc3545; color: white; padding: 10px 20px; text-decoration: none;">Logout</a>
+            
+            <h3>API Actions</h3>
+            <p>Test your API endpoints:</p>
+            <button onclick="getAllUsers()">Get All Users</button>
+            <button onclick="getMyProfile()">Get My Profile</button>
+        </div>
+    {% else %}
+        <h1>Welcome to My App</h1>
+        <p>Please log in to access your account</p>
+        <a href="{% url 'login' %}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none;">Login</a>
+    {% endif %}
+
+    <script>
+    function getAllUsers() {
+        fetch('/api/users/', {
+            method: 'GET',
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('All Users:', data);
+            alert('Users: ' + JSON.stringify(data, null, 2));
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error: Check console');
+        });
+    }
+
+    function getMyProfile() {
+        fetch('/profile/', {
+            method: 'GET',
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('My Profile:', data);
+            alert('Profile: ' + JSON.stringify(data, null, 2));
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error: Check console');
+        });
+    }
+    </script>
+</body>
+</html>
