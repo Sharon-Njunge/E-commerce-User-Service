@@ -3,6 +3,7 @@ __pycache__/
 .env
 *.sqlite3
 postgres_data/
+auth/
 
 
 # Python

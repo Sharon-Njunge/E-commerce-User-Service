@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -35,7 +34,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "auth_service.middleware.AuthMiddleware",
-
 ]
 
 ROOT_URLCONF = "auth_service.urls"
@@ -93,6 +91,10 @@ REST_FRAMEWORK = {
 
 # Auth0 settings
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
+AUTH0_CLIENT_ID = os.getenv("AUTH0_CLIENT_ID")
+AUTH0_CLIENT_SECRET = os.getenv("AUTH0_CLIENT_SECRET")
+AUTH0_CALLBACK_URL = os.getenv("AUTH0_CALLBACK_URL")
+
 API_IDENTIFIER = os.getenv("API_IDENTIFIER")
 ALGORITHMS = os.getenv("ALGORITHMS", "RS256")
 
