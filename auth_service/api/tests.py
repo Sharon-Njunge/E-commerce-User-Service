@@ -15,7 +15,6 @@ class AuthTests(TestCase):
             preferences={"theme": "dark"},
         )
 
-
     def test_get_profile_success(self):
         """Test getting a user profile."""
         response = self.client.get("/api/profile/test-user-123/")
@@ -25,12 +24,10 @@ class AuthTests(TestCase):
         self.assertEqual(data["email"], "test@example.com")
         self.assertEqual(data["firstName"], "John")
 
-
     def test_get_profile_not_found(self):
         """Test getting non-existent user."""
         response = self.client.get("/api/profile/fake-user/")
         self.assertEqual(response.status_code, 404)
-
 
     def test_update_profile(self):
         """Test updating a profile."""
@@ -48,7 +45,6 @@ class AuthTests(TestCase):
         updated_user = UserProfile.objects.get(auth0_user_id="test-user-123")
         self.assertEqual(updated_user.first_name, "Jane")
 
-
     def test_list_users(self):
         """Test listing all users."""
         response = self.client.get("/api/users/")
@@ -58,12 +54,10 @@ class AuthTests(TestCase):
         self.assertEqual(data["count"], 1)
         self.assertEqual(len(data["users"]), 1)
 
-
     def test_profile_no_session(self):
         """Test profile endpoint without login."""
         response = self.client.get("/profile/")
         self.assertEqual(response.status_code, 401)
-
 
     def test_index_page(self):
         """Test index page loads."""

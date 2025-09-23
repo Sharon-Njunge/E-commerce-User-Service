@@ -31,19 +31,18 @@ def index_view(request):
             "pretty": json.dumps(request.session.get("user"), indent=4),
         },
     )
-  
+
 
 def login_view(request):
     """Redirect user to Auth0 login page."""
     return oauth.auth0.authorize_redirect(request, AUTH0_CALLBACK_URL)
 
 
-
 def callback_view(request):
     """ Handle Auth0 callback after user authentication. Creates or retrieves user profile and saves session data."""
     token = oauth.auth0.authorize_access_token(request)
     user_info = token.get('userinfo', {})
- 
+
     # Create or get user profile
     user_profile, created = UserProfile.objects.get_or_create(
         auth0_user_id=user_info['sub'],
@@ -54,7 +53,7 @@ def callback_view(request):
             'preferences': user_info.get('preferences', {})
         }
     )
- 
+
     request.session["user"] = token
     return redirect(request.build_absolute_uri(reverse("index")))
 
@@ -86,7 +85,7 @@ def profile_view(request):
         )
 
     user_info = user_session.get("userinfo", {})
-  
+
     response_data = {
         "id": user_info.get("id"),
         "email": user_info.get("email"),
@@ -94,7 +93,7 @@ def profile_view(request):
         "lastName": user_info.get("last_name", ""),
         "preferences": {}
     }
-  
+
     return JsonResponse(response_data, status=200)
 
 
@@ -111,8 +110,8 @@ def get_profile(request, user_id):
             "preferences": user.preferences
         })
     except UserProfile.DoesNotExist:
-        return JsonResponse({"error": "User not found"}, status=404)    
-      
+        return JsonResponse({"error": "User not found"}, status=404)
+
 
 @csrf_exempt
 def update_profile(request, user_id):
@@ -123,23 +122,23 @@ def update_profile(request, user_id):
     try:
         user = UserProfile.objects.get(auth0_user_id=user_id)
         data = json.loads(request.body)
-      
+
         user.first_name = data.get("firstName", user.first_name)
         user.last_name = data.get("lastName", user.last_name)
         user.email = data.get("email", user.email)
         user.preferences = data.get("preferences", user.preferences)
         user.save()
-    
+
         return JsonResponse({"message": "Updated successfully"})
     except json.JSONDecodeError:
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-   
+
 def list_all_users(request):
     """Get a list of all user profiles in the system."""
     users = UserProfile.objects.all()
     user_list = []
-  
+
     for user in users:
         user_list.append({
             "id": user.auth0_user_id,
