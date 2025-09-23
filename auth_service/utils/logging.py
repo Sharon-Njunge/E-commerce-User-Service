@@ -1,9 +1,10 @@
-import logging
 import json
+import logging
+import threading
 import uuid
 from datetime import datetime
+
 from django.utils.deprecation import MiddlewareMixin
-import threading
 
 # Thread-local storage for request ID
 _thread_local = threading.local()

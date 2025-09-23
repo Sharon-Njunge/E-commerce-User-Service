@@ -1,13 +1,9 @@
-from django.urls import path, include
-from .views import (
-    UserDetailView, UserListView, UserPreferencesView,
-    HealthCheckView, ReadinessCheckView, MetricsView,
-    UserSessionsView, LoginAttemptsView
-)
 from django.urls import path
-from auth_service import api
+
 from auth_service.api import views
 
+from .views import (LoginAttemptsView, UserDetailView, UserListView,
+                    UserPreferencesView, UserSessionsView)
 
 app_name = 'api'
 

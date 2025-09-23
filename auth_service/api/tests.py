@@ -1,15 +1,15 @@
 
+import json
+from unittest.mock import patch
+
 import pytest
 import requests
-from unittest.mock import patch
-from django.test import TestCase
+from django.test import Client, TestCase
 from rest_framework.test import APIClient
-from rest_framework import status
+
 from auth_service.api.utils import call_auth0  # Fixed import path
-from auth_service.api.constants import HTTP_200_OK
-import json
-from django.test import TestCase, Client
 from auth_service.users.models import UserProfile
+
 
 class APITestCase(TestCase):
     def setUp(self):

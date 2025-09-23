@@ -1,22 +1,21 @@
 import json
 import logging
-from django.db import connection
-from django.core.cache import cache
-from django.utils import timezone
-from django.http import JsonResponse, HttpResponse
-from rest_framework import status, generics, permissions
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 from urllib.parse import quote_plus, urlencode
+
 from authlib.integrations.django_client import OAuth
+from django.core.cache import cache
+from django.db import connection
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
-from django.http import JsonResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from auth_service.settings import AUTH0_CALLBACK_URL, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_DOMAIN
+from rest_framework import permissions, status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from auth_service.settings import (AUTH0_CALLBACK_URL, AUTH0_CLIENT_ID,
+                                   AUTH0_CLIENT_SECRET, AUTH0_DOMAIN)
 from auth_service.users.models import UserProfile
 
 oauth = OAuth()
@@ -31,7 +30,8 @@ oauth.register(
     server_metadata_url=f"https://{AUTH0_DOMAIN}/.well-known/openid-configuration",
 )
 
-from auth_service.users.models import User, UserPreferences, UserSession, LoginAttempt
+from auth_service.users.models import (LoginAttempt, User, UserPreferences,
+                                       UserSession)
 
 try:
     from auth_service.api.utils import call_auth0
@@ -46,7 +46,7 @@ except ImportError:
         pass
 
 try:
-    from .constants import *
+    pass
 except ImportError:
     # Define constants if import fails
     HTTP_200_OK = status.HTTP_200_OK

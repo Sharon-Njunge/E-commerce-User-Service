@@ -1,11 +1,14 @@
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
+
+from django.contrib.auth.hashers import make_password
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from django.contrib.auth.hashers import make_password
 from faker import Faker
-from auth_service.users.models import User, UserPreferences, UserRole, UserSession, LoginAttempt
+
+from auth_service.users.models import (LoginAttempt, User, UserPreferences,
+                                       UserRole, UserSession)
 
 fake = Faker()
 
@@ -243,7 +246,8 @@ class Command(BaseCommand):
 # auth_service/users/admin.py
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, UserPreferences, UserSession, UserRole, LoginAttempt
+
+from .models import LoginAttempt, User, UserPreferences, UserRole, UserSession
 
 
 @admin.register(User)

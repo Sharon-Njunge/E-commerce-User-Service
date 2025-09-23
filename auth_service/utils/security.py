@@ -1,6 +1,8 @@
 # Minimal stub security utilities for local/dev. Replace with real implementation.
 from functools import wraps
+
 from django.http import HttpResponse
+
 
 def rate_limit(limit=100, period=60):
     """
