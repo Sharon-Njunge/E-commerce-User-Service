@@ -1,10 +1,12 @@
 from django.urls import path
 from auth_service import api
-from .views import UserDetailView, UserListView
+from auth_service.api import views
+
 
 namespace = api
 
 urlpatterns = [
-    path("v1/users/", UserListView.as_view(), name="user-list"),
-    path("v1/users/<str:user_id>/", UserDetailView.as_view(), name="user-detail"),
+    path("profile/<str:user_id>/", views.get_profile),
+    path("profile/<str:user_id>/update/", views.update_profile),
+    path("users/", views.list_all_users, name="list_users"),
 ]

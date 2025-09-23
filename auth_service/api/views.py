@@ -1,114 +1,155 @@
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from auth_service.settings import AUTH0_DOMAIN
-from auth_service.utils.permissions import HasAuth0Permission
-from auth_service.api.utils import call_auth0
+import json
+from urllib.parse import quote_plus, urlencode
+from authlib.integrations.django_client import OAuth
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from auth_service.settings import AUTH0_CALLBACK_URL, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_DOMAIN
+from auth_service.users.models import UserProfile
 
 
-class UserListView(APIView):
-    """List all users from Auth0"""
 
-    permission_classes = [IsAuthenticated, HasAuth0Permission]
+oauth = OAuth()
 
-    def get_permissions(self):
-        permissions = super().get_permissions()
-        for permission in permissions:
-            if isinstance(permission, HasAuth0Permission):
-                permission.required_permission = "read:users"
-        return permissions
-
-    def get(self, reuest):
-        """List all users from Auth0"""
-        try:
-            auth0_url = "https://{AUTH0_DOMAIN}/api/v1/users"
-            users_data = call_auth0(auth0_url)
-
-            if not users_data:
-                return Response({"users": [], "total": 0}, status=200)
-
-            formatted_users = []
-            for user in users_data:
-                formatted_users.append(
-                    {
-                        "user_id": user.get("user_id"),
-                        "email": user.get("email"),
-                        "name": user.get("name"),
-                        "email_verified": user.get("email_verified"),
-                        "created_at": user.get("created_at"),
-                    }
-                )
-
-            return Response(
-                {"users": formatted_users, "total": len(formatted_users)}, status=200
-            )
-
-        except Exception as e:
-            return Response(
-                {"error": f"Failed to retrieve users: {str(e)}"}, status=500
-            )
+oauth.register(
+    "auth0",
+    client_id=AUTH0_CLIENT_ID,
+    client_secret=AUTH0_CLIENT_SECRET,
+    client_kwargs={
+        "scope": "openid profile email",
+    },
+    server_metadata_url=f"https://{AUTH0_DOMAIN}/.well-known/openid-configuration",
+)
 
 
-class UserDetailView(APIView):
-    """Get and update individual user from Auth0"""
+def index_view(request):
+    """ Render the main application page with user session data."""
+    return render(
+        request,
+        "auth/index.html",
+        context={
+            "session": request.session.get("user"),
+            "pretty": json.dumps(request.session.get("user"), indent=4),
+        },
+    )
+    
 
-    permission_classes = [IsAuthenticated, HasAuth0Permission]
+def login_view(request):
+    """Redirect user to Auth0 login page."""
+    return oauth.auth0.authorize_redirect(request, AUTH0_CALLBACK_URL)
 
-    def get_permissions(self):
-        permissions = super().get_permissions()
-        for permission in permissions:
-            if isinstance(permission, HasAuth0Permission):
-                permission.required_permission = "read:users"
-        return permissions
 
-    def get(self, request, user_id):
-        """Retrieve user information in Auth0"""
-        try:
-            auth0_url = f"https://{AUTH0_DOMAIN}/api/v1/users/{user_id}"
-            user_data = call_auth0(auth0_url)
 
-            if not user_data:
-                return Response({"error": "User not found"}, status=404)
+def callback_view(request):
+    """ Handle Auth0 callback after user authentication. Creates or retrieves user profile and saves session data."""
+    token = oauth.auth0.authorize_access_token(request)
+    user_info = token.get('userinfo', {})
+   
+    # Create or get user profile
+    user_profile, created = UserProfile.objects.get_or_create(
+        auth0_user_id=user_info['sub'],
+        defaults={
+            'email': user_info['email'],
+            'first_name': user_info.get('given_name', ''),
+            'last_name': user_info.get('family_name', ''),
+            'preferences': user_info.get('preferences', {})
+        }
+    )
+  
+    request.session["user"] = token
+    return redirect(request.build_absolute_uri(reverse("index")))
 
-            formatted_user = {
-                "user_id": user_data.get("user_id"),
-                "email": user_data.get("email"),
-                "name": user_data.get("name"),
-                "email_verified": user_data.get("email_verified"),
-                "created_at": user_data.get("created_at"),
-            }
 
-            return Response(formatted_user, status=200)
+def logout_view(request):
+    """Clear user session and redirect to Auth0 logout endpoint."""
+    request.session.clear()
 
-        except Exception as e:
-            return Response({"error": f"Failed to retrieve user: {str(e)}"}, status=404)
+    return redirect(
+        f"https://{AUTH0_DOMAIN}/logout?"
+        + urlencode(
+            {
+                "returnTo": request.build_absolute_uri(reverse("index")),
+                "client_id": AUTH0_CLIENT_ID,
+            },
+            quote_via=quote_plus,
+        ),
+    )
 
-    def put(self, request, user_id):
-        """Update user information in Auth0"""
-        permissions = self.get_permissions()
-        for permission in permissions:
-            if isinstance(permission, HasAuth0Permission):
-                permission.required_permission = "update:users"
+  
+def profile_view(request):
+    """Get current authenticated user's profile information."""
+    user_session = request.session.get("user")
 
-        try:
-            update_data = {}
-            if "name" in request.data:
-                update_data["name"] = request.data["name"]
-            if "email" in request.data:
-                update_data["email"] = request.data["email"]
+    if not user_session:
+        return JsonResponse(
+            {"error": "No/invalid token"},
+            status=401
+        )
 
-            auth0_url = f"https://{AUTH0_DOMAIN}/api/v1/users/{user_id}"
-            updated_user = call_auth0(auth0_url, method="PATCH", data=update_data)
+    user_info = user_session.get("userinfo", {})
+   
+    response_data = {
+        "id": user_info.get("id"),
+        "email": user_info.get("email"),
+        "firstName": user_info.get("first_name", ""),
+        "lastName": user_info.get("last_name", ""),
+        "preferences": {}
+    }
+    
+    return JsonResponse(response_data, status=200)
 
-            if not updated_user:
-                return Response({"error": "Failed to update user"}, status=400)
 
-            formatted_user = {
-                "email": updated_user.get("email"),
-                "name": updated_user.get("name"),
-            }
+def get_profile(request, user_id):
+    """Get a specific user's profile by their Auth0 user ID."""
 
-            return Response(formatted_user, status=200)
+    try:
+        user = UserProfile.objects.get(auth0_user_id=user_id)
+        return JsonResponse({
+            "id": user.auth0_user_id,
+            "email": user.email,
+            "firstName": user.first_name,
+            "lastName": user.last_name,
+            "preferences": user.preferences
+        })
+    except:
+        return JsonResponse({"error": "User not found"}, status=404)
 
-        except Exception as e:
-            return Response({"error": f"Failed to update user: {str(e)}"}, status=400)
+
+@csrf_exempt
+def update_profile(request, user_id):
+    """Update a specific user's profile information."""
+    if request.method != 'POST':
+        return JsonResponse({"error": "POST required"}, status=405)
+    
+    try:
+        user = UserProfile.objects.get(auth0_user_id=user_id)
+        data = json.loads(request.body)
+        
+        user.first_name = data.get("firstName", user.first_name)
+        user.last_name = data.get("lastName", user.last_name)
+        user.email = data.get("email", user.email)
+        user.preferences = data.get("preferences", user.preferences)
+        user.save()
+        
+        return JsonResponse({"message": "Updated successfully"})
+    except:
+        return JsonResponse({"error": "User not found or invalid data"}, status=400)
+    
+    
+def list_all_users(request):
+    """Get a list of all user profiles in the system."""
+    users = UserProfile.objects.all()
+    user_list = []
+    
+    for user in users:
+        user_list.append({
+            "id": user.auth0_user_id,
+            "email": user.email,
+            "firstName": user.first_name,
+            "lastName": user.last_name,
+            "preferences": user.preferences,
+            "createdAt": user.created_at.isoformat()
+        })
+    
+    return JsonResponse({"users": user_list, "count": len(user_list)})

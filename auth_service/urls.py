@@ -4,6 +4,8 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
+from auth_service.api import views
+
 schema_view = get_schema_view(
     openapi.Info(
         title="E-commerce User Service API",
@@ -15,6 +17,11 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path("", views.index_view, name="index"),
+    path("login/", views.login_view, name="login"),
+    path("logout/", views.logout_view, name="logout"),
+    path("profile/", views.profile_view, name="profile"),
+    path("callback/", views.callback_view, name="callback"),
     path("admin/", admin.site.urls),
     path("api/", include("auth_service.api.urls")),  # adjust if your app has urls.py
     path(
