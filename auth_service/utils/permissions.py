@@ -21,3 +21,4 @@ class HasAuth0Permission(permissions.BasePermission):
             return self.required_permission in token_permissions
 
         return True
+    
