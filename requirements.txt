@@ -18,3 +18,5 @@ cryptography>=3.4.0,<43.0.0
 authlib
 locust>=2.0.0
 locust>=2.0.0
+flake8
+pytest-django
