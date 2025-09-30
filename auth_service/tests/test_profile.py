@@ -13,7 +13,6 @@ class UserProfileTests(APITestCase):
         self.profile_url = reverse('user-profile')
         self.update_profile_url = reverse('user-profile-update')
         
-        # Create a test user
         self.user = UserProfile.objects.create(
             email='test@example.com',
             auth0_user_id='auth0|123456789',
@@ -21,7 +20,6 @@ class UserProfileTests(APITestCase):
             last_name='Doe'
         )
         
-        # Create a valid JWT token for testing
         self.valid_token = self._create_valid_jwt_token()
 
     def _create_valid_jwt_token(self):
@@ -29,11 +27,10 @@ class UserProfileTests(APITestCase):
         payload = {
             'sub': 'auth0|123456789',
             'email': 'test@example.com',
-            'exp': time.time() + 3600,  # 1 hour from now
+            'exp': time.time() + 3600, 
             'iat': time.time(),
             'iss': 'https://your-domain.auth0.com/'
         }
-        # This is a mock token - in real tests, you'd use your actual JWT signing
         return 'mock_valid_jwt_token'
 
     def _create_expired_jwt_token(self):
@@ -41,7 +38,7 @@ class UserProfileTests(APITestCase):
         payload = {
             'sub': 'auth0|123456789',
             'email': 'test@example.com',
-            'exp': time.time() - 3600,  # 1 hour ago
+            'exp': time.time() - 3600,
             'iat': time.time() - 7200,
             'iss': 'https://your-domain.auth0.com/'
         }
@@ -50,7 +47,6 @@ class UserProfileTests(APITestCase):
     @patch('auth_service.users.auth.verify_token')
     def test_get_profile_success(self, mock_verify_token):
         """Test successful profile retrieval with valid token"""
-        # Mock token verification
         mock_verify_token.return_value = {
             'sub': 'auth0|123456789',
             'email': 'test@example.com'
@@ -75,7 +71,6 @@ class UserProfileTests(APITestCase):
     @patch('auth_service.users.auth.verify_token')
     def test_get_profile_invalid_token(self, mock_verify_token):
         """Test profile retrieval fails with invalid token"""
-        # Mock token verification failure
         mock_verify_token.side_effect = Exception('Invalid token')
 
         self.client.credentials(HTTP_AUTHORIZATION='Bearer invalid_token')
@@ -86,7 +81,6 @@ class UserProfileTests(APITestCase):
     @patch('auth_service.users.auth.verify_token')
     def test_get_profile_expired_token(self, mock_verify_token):
         """Test profile retrieval fails with expired token"""
-        # Mock token verification for expired token
         mock_verify_token.side_effect = jwt.ExpiredSignatureError('Token expired')
 
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self._create_expired_jwt_token()}')
@@ -97,7 +91,6 @@ class UserProfileTests(APITestCase):
     @patch('auth_service.users.auth.verify_token')
     def test_update_profile_success(self, mock_verify_token):
         """Test successful profile update with valid token"""
-        # Mock token verification
         mock_verify_token.return_value = {
             'sub': 'auth0|123456789',
             'email': 'test@example.com'
@@ -115,7 +108,6 @@ class UserProfileTests(APITestCase):
         self.assertEqual(response.data['first_name'], 'Jane')
         self.assertEqual(response.data['last_name'], 'Smith')
         
-        # Verify the user was updated in database
         updated_user = UserProfile.objects.get(id=self.user.id)
         self.assertEqual(updated_user.first_name, 'Jane')
         self.assertEqual(updated_user.last_name, 'Smith')
@@ -123,14 +115,13 @@ class UserProfileTests(APITestCase):
     @patch('auth_service.users.auth.verify_token')
     def test_update_profile_partial_data(self, mock_verify_token):
         """Test successful profile update with partial data"""
-        # Mock token verification
         mock_verify_token.return_value = {
             'sub': 'auth0|123456789',
             'email': 'test@example.com'
         }
 
         update_data = {
-            'first_name': 'Jane'  # Only update first name
+            'first_name': 'Jane' 
         }
 
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.valid_token}')
@@ -138,19 +129,18 @@ class UserProfileTests(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['first_name'], 'Jane')
-        self.assertEqual(response.data['last_name'], 'Doe')  # Should remain unchanged
+        self.assertEqual(response.data['last_name'], 'Doe') 
 
     @patch('auth_service.users.auth.verify_token')
     def test_update_profile_invalid_data(self, mock_verify_token):
         """Test profile update fails with invalid data"""
-        # Mock token verification
         mock_verify_token.return_value = {
             'sub': 'auth0|123456789',
             'email': 'test@example.com'
         }
 
         invalid_data = {
-            'email': 'invalid-email-format'  # Invalid email format
+            'email': 'invalid-email-format'  
         }
 
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.valid_token}')
@@ -161,7 +151,6 @@ class UserProfileTests(APITestCase):
     @patch('auth_service.users.auth.verify_token')
     def test_update_profile_nonexistent_user(self, mock_verify_token):
         """Test profile update fails for non-existent user"""
-        # Mock token verification for user that doesn't exist in our DB
         mock_verify_token.return_value = {
             'sub': 'auth0|nonexistent',
             'email': 'nonexistent@example.com'

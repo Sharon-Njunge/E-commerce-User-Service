@@ -12,7 +12,6 @@ class TokenRefreshTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_refresh_token_success(self, mock_post):
         """Test successful token refresh"""
-        # Mock Auth0 token refresh endpoint response
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -35,7 +34,6 @@ class TokenRefreshTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_refresh_token_invalid_refresh_token(self, mock_post):
         """Test token refresh fails with invalid refresh token"""
-        # Mock Auth0 token refresh endpoint error
         mock_response = MagicMock()
         mock_response.status_code = 401
         mock_response.json.return_value = {
@@ -56,7 +54,6 @@ class TokenRefreshTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_refresh_token_expired_refresh_token(self, mock_post):
         """Test token refresh fails with expired refresh token"""
-        # Mock Auth0 token refresh endpoint error for expired token
         mock_response = MagicMock()
         mock_response.status_code = 401
         mock_response.json.return_value = {
@@ -75,7 +72,7 @@ class TokenRefreshTests(APITestCase):
 
     def test_refresh_token_missing_refresh_token(self):
         """Test token refresh fails with missing refresh token"""
-        refresh_payload = {}  # No refresh token provided
+        refresh_payload = {} 
 
         response = self.client.post(self.refresh_url, refresh_payload, format='json')
         

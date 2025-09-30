@@ -11,7 +11,6 @@ import time
 class UserLoginTests(APITestCase):
     def setUp(self):
         self.login_url = reverse('user-login')
-        # Create a test user
         self.user = UserProfile.objects.create(
             email='test@example.com',
             auth0_user_id='auth0|123456789',
@@ -22,7 +21,6 @@ class UserLoginTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_login_success(self, mock_post):
         """Test successful login with Auth0"""
-        # Mock Auth0 token endpoint response
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
@@ -48,7 +46,6 @@ class UserLoginTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_login_invalid_credentials(self, mock_post):
         """Test login fails with invalid credentials"""
-        # Mock Auth0 token endpoint error response
         mock_response = MagicMock()
         mock_response.status_code = 401
         mock_response.json.return_value = {
@@ -70,7 +67,6 @@ class UserLoginTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_login_nonexistent_user(self, mock_post):
         """Test login fails with non-existent user"""
-        # Mock Auth0 token endpoint error response for non-existent user
         mock_response = MagicMock()
         mock_response.status_code = 401
         mock_response.json.return_value = {
@@ -90,7 +86,6 @@ class UserLoginTests(APITestCase):
 
     def test_login_missing_credentials(self):
         """Test login fails with missing email or password"""
-        # Missing password
         login_payload = {
             'email': 'test@example.com'
         }
@@ -102,7 +97,6 @@ class UserLoginTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_login_account_locked(self, mock_post):
         """Test login fails when account is locked (Auth0 blocked)"""
-        # Mock Auth0 token endpoint error for blocked account
         mock_response = MagicMock()
         mock_response.status_code = 403
         mock_response.json.return_value = {
@@ -124,7 +118,6 @@ class UserLoginTests(APITestCase):
     @patch('auth_service.api.views.requests.post')
     def test_login_auth0_service_unavailable(self, mock_post):
         """Test login fails when Auth0 service is unavailable"""
-        # Mock Auth0 service error
         mock_response = MagicMock()
         mock_response.status_code = 503
         mock_post.return_value = mock_response

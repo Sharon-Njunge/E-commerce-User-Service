@@ -23,8 +23,7 @@ class UserRegistrationTests(APITestCase):
     @patch('auth_service.api.views.auth0_management_create_user')
     def test_register_new_user_success(self, mock_create_user, mock_get_user):
         """Test successful user registration"""
-        # Mock Auth0 responses
-        mock_get_user.return_value = None  # User doesn't exist in Auth0
+        mock_get_user.return_value = None  
         mock_create_user.return_value = {
             'user_id': 'auth0|123456789',
             'email': 'test@example.com'
@@ -37,13 +36,11 @@ class UserRegistrationTests(APITestCase):
         self.assertEqual(response.data['first_name'], 'John')
         self.assertEqual(response.data['last_name'], 'Doe')
         
-        # Verify user was created in database
         self.assertTrue(UserProfile.objects.filter(email='test@example.com').exists())
 
     @patch('auth_service.api.views.auth0_management_get_user')
     def test_register_duplicate_email(self, mock_get_user):
         """Test registration fails with duplicate email"""
-        # Create a user first
         UserProfile.objects.create(
             email='test@example.com',
             auth0_user_id='auth0|existinguser',
@@ -51,7 +48,6 @@ class UserRegistrationTests(APITestCase):
             last_name='User'
         )
 
-        # Mock Auth0 user doesn't exist (but local DB does)
         mock_get_user.return_value = None
 
         response = self.client.post(self.register_url, self.valid_payload, format='json')
@@ -64,7 +60,6 @@ class UserRegistrationTests(APITestCase):
         invalid_payload = {
             'first_name': 'John',
             'last_name': 'Doe'
-            # Missing email and auth0_user_id
         }
 
         response = self.client.post(self.register_url, invalid_payload, format='json')
@@ -92,7 +87,6 @@ class UserRegistrationTests(APITestCase):
     @patch('auth_service.api.views.auth0_management_get_user')
     def test_register_auth0_user_already_exists(self, mock_get_user):
         """Test registration fails when Auth0 user already exists"""
-        # Mock Auth0 user exists
         mock_get_user.return_value = {
             'user_id': 'auth0|existinguser',
             'email': 'test@example.com'
