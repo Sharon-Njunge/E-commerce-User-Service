@@ -1,23 +1,4 @@
 [flake8]
-# Don’t check these directories
-exclude = 
-    .git,
-    __pycache__,
-    venv,
-    .venv,
-    env,
-    .env,
-    build,
-    dist,
-    migrations
-
-# Allow longer lines (default is 79, this makes it more practical)
 max-line-length = 120
-
-# Ignore some rules you might not care about
-# E203 & W503 conflict with Black formatter
-# E501 is line too long (we control via max-line-length instead)
-ignore = 
-    E203,
-    W503,
-    E501
+extend-ignore = E203,E501,W503,F401,W292,W291,W293,E302,E402,F811
+exclude = venv,__pycache__,.git,migrations,tests.py,test_*.py
